@@ -326,7 +326,16 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkQueueInsertDebugUtilsLabelEXT             = GET_DEV_PROC(vk, vkQueueInsertDebugUtilsLabelEXT);
 	vk->vkSetDebugUtilsObjectNameEXT                = GET_DEV_PROC(vk, vkSetDebugUtilsObjectNameEXT);
 	vk->vkSetDebugUtilsObjectTagEXT                 = GET_DEV_PROC(vk, vkSetDebugUtilsObjectTagEXT);
+
 #endif // defined(VK_EXT_debug_utils)
+
+#if defined(VK_NV_low_latency2)
+	vk->vkGetLatencyTimingsNV                       = GET_DEV_PROC(vk, vkGetLatencyTimingsNV);
+	vk->vkLatencySleepNV                            = GET_DEV_PROC(vk, vkLatencySleepNV);
+	vk->vkQueueNotifyOutOfBandNV                    = GET_DEV_PROC(vk, vkQueueNotifyOutOfBandNV);
+	vk->vkSetLatencyMarkerNV                        = GET_DEV_PROC(vk, vkSetLatencyMarkerNV);
+	vk->vkSetLatencySleepModeNV                     = GET_DEV_PROC(vk, vkSetLatencySleepModeNV);
+#endif // defined(VK_NV_low_latency2)
 
 	// end of GENERATED device loader code - do not modify - used by scripts
 	// clang-format on

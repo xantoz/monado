@@ -145,6 +145,7 @@ struct vk_bundle
 	bool has_EXT_robustness2;
 	bool has_ANDROID_external_format_resolve;
 	bool has_GOOGLE_display_timing;
+	bool has_NV_low_latency2;
 	// end of GENERATED device extension code - do not modify - used by scripts
 
 	struct
@@ -444,7 +445,16 @@ struct vk_bundle
 	PFN_vkQueueInsertDebugUtilsLabelEXT vkQueueInsertDebugUtilsLabelEXT;
 	PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT;
 	PFN_vkSetDebugUtilsObjectTagEXT vkSetDebugUtilsObjectTagEXT;
+
 #endif // defined(VK_EXT_debug_utils)
+
+#if defined(VK_NV_low_latency2)
+	PFN_vkGetLatencyTimingsNV vkGetLatencyTimingsNV;
+	PFN_vkLatencySleepNV vkLatencySleepNV;
+	PFN_vkQueueNotifyOutOfBandNV vkQueueNotifyOutOfBandNV;
+	PFN_vkSetLatencyMarkerNV vkSetLatencyMarkerNV;
+	PFN_vkSetLatencySleepModeNV vkSetLatencySleepModeNV;
+#endif // defined(VK_NV_low_latency2)
 
 	// end of GENERATED device loader code - do not modify - used by scripts
 };

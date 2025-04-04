@@ -603,6 +603,10 @@ static const char *optional_device_extensions[] = {
 #ifdef VK_KHR_synchronization2
     VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
 #endif
+#if defined(VK_NV_low_latency2)
+    VK_NV_LOW_LATENCY_2_EXTENSION_NAME,
+#endif
+
 };
 
 static bool

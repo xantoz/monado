@@ -771,6 +771,10 @@ comp_target_swapchain_create_images(struct comp_target *ct, const struct comp_ta
 	    .clipped = VK_TRUE,
 	    .oldSwapchain = old_swapchain_handle,
 	};
+	/* TODO?: Do we need to add
+	 * https://registry.khronos.org/vulkan/specs/latest/man/html/VkSwapchainLatencyCreateInfoNV.html
+	 * to the pNext chain to enable enabling of low latency mode? or is it
+	 * just a thing to make it enabled from the start? */
 
 	// Print what we are creating.
 	vk_print_swapchain_create_info(vk, &swapchain_info, print_log_level);
@@ -815,6 +819,29 @@ comp_target_swapchain_create_images(struct comp_target *ct, const struct comp_ta
 		}
 	} else {
 		COMP_INFO(ct->c, "Not using vblank event thread!");
+	}
+#endif
+
+
+#if defined(VK_NV_low_latency2)
+	// XZ HAX to enable low latency boost. Maybe eventually also low latency mode?
+	if (vk->has_NV_low_latency2) {
+		COMP_INFO(ct->c, "We have NV_low_latency2. Attempt to activate Low Latency Boost");
+		VkLatencySleepModeInfoNV sleepModeInfo = {
+			.sType = VK_STRUCTURE_TYPE_LATENCY_SLEEP_MODE_INFO_NV,
+			.pNext = NULL,
+			.lowLatencyMode = false,
+			.lowLatencyBoost = true,
+			/* .minimumIntervalUs = 11000, */
+			.minimumIntervalUs = 10500,
+		};
+
+		ret = vk->vkSetLatencySleepModeNV(vk->device, cts->swapchain.handle, &sleepModeInfo);
+		if (ret != VK_SUCCESS) {
+			VK_ERROR(vk, "vkSetLatencySleepModeNV: %s", vk_result_string(ret));
+		} else {
+			COMP_INFO(ct->c, "Successfully enabled low latency boost");
+		}
 	}
 #endif
 
