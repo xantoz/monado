@@ -183,6 +183,12 @@ def get_device_cmds():
         Cmd("vkQueueInsertDebugUtilsLabelEXT", requires=("VK_EXT_debug_utils",)),
         Cmd("vkSetDebugUtilsObjectNameEXT", requires=("VK_EXT_debug_utils",)),
         Cmd("vkSetDebugUtilsObjectTagEXT", requires=("VK_EXT_debug_utils",)),
+        None,
+        Cmd("vkGetLatencyTimingsNV", requires=("VK_NV_low_latency2",)),
+        Cmd("vkLatencySleepNV", requires=("VK_NV_low_latency2",)),
+        Cmd("vkQueueNotifyOutOfBandNV", requires=("VK_NV_low_latency2",)),
+        Cmd("vkSetLatencyMarkerNV", requires=("VK_NV_low_latency2",)),
+        Cmd("vkSetLatencySleepModeNV", requires=("VK_NV_low_latency2",)),
     ]
 
 
@@ -307,6 +313,7 @@ DEVICE_EXTENSIONS_TO_CHECK = [
     "VK_EXT_robustness2",
     "VK_ANDROID_external_format_resolve",
     "VK_GOOGLE_display_timing",
+    "VK_NV_low_latency2",
 ]
 
 ROOT = Path(__file__).resolve().parent.parent
