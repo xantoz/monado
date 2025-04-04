@@ -609,6 +609,9 @@ static const char *optional_device_extensions[] = {
 #if defined(VK_EXT_present_mode_fifo_latest_ready)
     VK_EXT_PRESENT_MODE_FIFO_LATEST_READY_EXTENSION_NAME,
 #endif
+#if defined(VK_NV_low_latency2)
+    VK_NV_LOW_LATENCY_2_EXTENSION_NAME,
+#endif
 };
 
 static bool
