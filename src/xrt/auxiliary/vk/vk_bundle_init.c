@@ -218,6 +218,7 @@ vk_fill_in_has_instance_extensions(struct vk_bundle *vk, struct u_string_list *e
 			continue;
 		}
 #endif // defined(VK_EXT_debug_utils)
+
 	}
 	// end of GENERATED instance extension code - do not modify - used by scripts
 }
@@ -763,6 +764,7 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 	vk->has_EXT_present_mode_fifo_latest_ready = false;
 	vk->has_ANDROID_external_format_resolve = false;
 	vk->has_GOOGLE_display_timing = false;
+	vk->has_NV_low_latency2 = false;
 
 	const char *const *exts = u_string_list_get_data(ext_list);
 	uint32_t ext_count = u_string_list_get_size(ext_list);
@@ -937,6 +939,14 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 			continue;
 		}
 #endif // defined(VK_GOOGLE_display_timing)
+
+#if defined(VK_NV_low_latency2)
+		if (strcmp(ext, VK_NV_LOW_LATENCY_2_EXTENSION_NAME) == 0) {
+			vk->has_NV_low_latency2 = true;
+			continue;
+		}
+#endif // defined(VK_NV_low_latency2)
+
 	}
 	// end of GENERATED device extension code - do not modify - used by scripts
 }
