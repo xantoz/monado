@@ -30,6 +30,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(xcb_fullscreen, "XRT_COMPOSITOR_XCB_FULLSCREEN", fals
 DEBUG_GET_ONCE_NUM_OPTION(xcb_display, "XRT_COMPOSITOR_XCB_DISPLAY", -1)
 DEBUG_GET_ONCE_NUM_OPTION(default_framerate, "XRT_COMPOSITOR_DEFAULT_FRAMERATE", 60)
 DEBUG_GET_ONCE_BOOL_OPTION(compute, "XRT_COMPOSITOR_COMPUTE", USE_COMPUTE_DEFAULT)
+DEBUG_GET_ONCE_NUM_OPTION(present_mode, "XRT_PRESENT_MODE", VK_PRESENT_MODE_FIFO_KHR)
 // clang-format on
 
 static inline void
@@ -113,7 +114,7 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 
 	s->display = debug_get_num_option_xcb_display();
 	s->color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-	s->present_mode = VK_PRESENT_MODE_FIFO_KHR;
+	s->present_mode = debug_get_num_option_present_mode();
 	s->fullscreen = debug_get_bool_option_xcb_fullscreen();
 	s->preferred.width = xdev->hmd->screens[0].w_pixels;
 	s->preferred.height = xdev->hmd->screens[0].h_pixels;
