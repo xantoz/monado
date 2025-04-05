@@ -694,6 +694,37 @@ comp_target_swapchain_create_images(struct comp_target *ct, const struct comp_ta
 	// Now we can free the info.
 	vk_surface_info_destroy(&info);
 
+#if defined(VK_KHR_get_surface_capabilities2)
+	/* TODO: Move part of this into vk_surface_info_fill_in instead? We
+	 * already call vkGetPhysicalDeviceSurfaceSupportKHR there so it could
+	 * probably easily be replaced with vkGetPhysicalDeviceSurfaceSupport2KHR! */
+	if (vk->has_KHR_get_surface_capabilities2) {
+		VkPresentModeKHR presentModes[64];
+		VkLatencySurfaceCapabilitiesNV latency_surf_caps = {
+			.sType = VK_STRUCTURE_TYPE_LATENCY_SURFACE_CAPABILITIES_NV,
+			.pNext = NULL,
+			.presentModeCount = 64,
+			.pPresentModes = &presentModes[0],
+		};
+		VkSurfaceCapabilities2KHR surf_caps = {
+			.sType = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR,
+			.pNext = &latency_surf_caps,
+		};
+		const VkPhysicalDeviceSurfaceInfo2KHR surf_info = {
+			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
+			.surface = cts->surface.handle,
+		};
+		ret = vk->vkGetPhysicalDeviceSurfaceCapabilities2KHR(vk->physical_device, &surf_info, &surf_caps);
+		if (ret != VK_SUCCESS) {
+			VK_ERROR(vk, "vkGetPhysicalDeviceSurfaceCapabilities2KHR failed: %s", vk_result_string(ret));
+		}
+		COMP_INFO(ct->c, "VkLatencySurfaceCapabilitiesNV.presentModeCount: %u", latency_surf_caps.presentModeCount);
+		COMP_INFO(ct->c, "VkLatencySurfaceCapabilitiesNV.presentModes:");
+		for (uint32_t i = 0; i < latency_surf_caps.presentModeCount; i++) {
+			COMP_INFO(ct->c, "    %s", vk_present_mode_string(latency_surf_caps.pPresentModes[i]));
+		}
+	}
+#endif
 
 	/*
 	 * Non-failable selections.
