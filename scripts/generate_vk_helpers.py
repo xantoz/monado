@@ -283,6 +283,9 @@ def get_instance_cmds():
         Cmd("vkCreateDebugUtilsMessengerEXT", requires=("VK_EXT_debug_utils",)),
         Cmd("vkSubmitDebugUtilsMessageEXT", requires=("VK_EXT_debug_utils",)),
         Cmd("vkDestroyDebugUtilsMessengerEXT", requires=("VK_EXT_debug_utils",)),
+        None,
+        Cmd("vkGetPhysicalDeviceSurfaceCapabilities2KHR", requires=("VK_KHR_get_surface_capabilities2",)),
+        Cmd("vkGetPhysicalDeviceSurfaceFormats2KHR", requires=("VK_KHR_get_surface_capabilities2",)),
     ]
 
 
@@ -291,6 +294,7 @@ INSTANCE_EXTENSIONS_TO_CHECK = [
     "VK_EXT_display_surface_counter",
     "VK_EXT_swapchain_colorspace",
     "VK_EXT_debug_utils",
+    "VK_KHR_get_surface_capabilities2",
 ]
 # Sorted KHR, EXT, Vendor, interally alphabetically
 DEVICE_EXTENSIONS_TO_CHECK = [

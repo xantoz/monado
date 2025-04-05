@@ -141,7 +141,13 @@ vk_get_instance_functions(struct vk_bundle *vk)
 	vk->vkCreateDebugUtilsMessengerEXT                    = GET_INS_PROC(vk, vkCreateDebugUtilsMessengerEXT);
 	vk->vkSubmitDebugUtilsMessageEXT                      = GET_INS_PROC(vk, vkSubmitDebugUtilsMessageEXT);
 	vk->vkDestroyDebugUtilsMessengerEXT                   = GET_INS_PROC(vk, vkDestroyDebugUtilsMessengerEXT);
+
 #endif // defined(VK_EXT_debug_utils)
+
+#if defined(VK_KHR_get_surface_capabilities2)
+	vk->vkGetPhysicalDeviceSurfaceCapabilities2KHR        = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceCapabilities2KHR);
+	vk->vkGetPhysicalDeviceSurfaceFormats2KHR             = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceFormats2KHR);
+#endif // defined(VK_KHR_get_surface_capabilities2)
 
 	// end of GENERATED instance loader code - do not modify - used by scripts
 
