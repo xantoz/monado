@@ -123,6 +123,7 @@ struct vk_bundle
 	bool has_EXT_display_surface_counter;
 	bool has_EXT_swapchain_colorspace;
 	bool has_EXT_debug_utils;
+	bool has_KHR_get_surface_capabilities2;
 	// end of GENERATED instance extension code - do not modify - used by scripts
 
 	// beginning of GENERATED device extension code - do not modify - used by scripts
@@ -269,7 +270,13 @@ struct vk_bundle
 	PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
 	PFN_vkSubmitDebugUtilsMessageEXT vkSubmitDebugUtilsMessageEXT;
 	PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
+
 #endif // defined(VK_EXT_debug_utils)
+
+#if defined(VK_KHR_get_surface_capabilities2)
+	PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR vkGetPhysicalDeviceSurfaceCapabilities2KHR;
+	PFN_vkGetPhysicalDeviceSurfaceFormats2KHR vkGetPhysicalDeviceSurfaceFormats2KHR;
+#endif // defined(VK_KHR_get_surface_capabilities2)
 
 	// end of GENERATED instance loader code - do not modify - used by scripts
 
