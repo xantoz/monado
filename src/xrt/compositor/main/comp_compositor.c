@@ -606,6 +606,9 @@ static const char *optional_device_extensions[] = {
 #ifdef VK_KHR_synchronization2
     VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
 #endif
+#if defined(VK_EXT_present_mode_fifo_latest_ready)
+    VK_EXT_PRESENT_MODE_FIFO_LATEST_READY_EXTENSION_NAME,
+#endif
 };
 
 static bool

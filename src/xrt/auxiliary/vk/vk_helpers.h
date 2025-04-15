@@ -149,6 +149,7 @@ struct vk_bundle
 	bool has_EXT_image_drm_format_modifier;
 	bool has_EXT_robustness2;
 	bool has_KHR_present_wait;
+	bool has_EXT_present_mode_fifo_latest_ready;
 	bool has_ANDROID_external_format_resolve;
 	bool has_GOOGLE_display_timing;
 	// end of GENERATED device extension code - do not modify - used by scripts
