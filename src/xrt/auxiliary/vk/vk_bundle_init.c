@@ -759,6 +759,7 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 	vk->has_EXT_global_priority = false;
 	vk->has_EXT_image_drm_format_modifier = false;
 	vk->has_EXT_robustness2 = false;
+	vk->has_EXT_present_mode_fifo_latest_ready = false;
 	vk->has_ANDROID_external_format_resolve = false;
 	vk->has_GOOGLE_display_timing = false;
 
@@ -893,6 +894,13 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 			continue;
 		}
 #endif // defined(VK_EXT_robustness2)
+
+#if defined(VK_EXT_present_mode_fifo_latest_ready)
+		if (strcmp(ext, VK_EXT_PRESENT_MODE_FIFO_LATEST_READY_EXTENSION_NAME) == 0) {
+			vk->has_EXT_present_mode_fifo_latest_ready = true;
+			continue;
+		}
+#endif // defined(VK_EXT_present_mode_fifo_latest_ready)
 
 #if defined(VK_ANDROID_external_format_resolve)
 		if (strcmp(ext, VK_ANDROID_EXTERNAL_FORMAT_RESOLVE_EXTENSION_NAME) == 0) {
@@ -1317,6 +1325,15 @@ vk_create_device(struct vk_bundle *vk,
 	};
 #endif
 
+#ifdef VK_EXT_present_mode_fifo_latest_ready
+	VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT ext_latest_ready_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT,
+	    .pNext = NULL,
+	    // TODO?
+	    .presentModeFifoLatestReady = VK_TRUE,
+	};
+#endif
+
 	VkPhysicalDeviceFeatures enabled_features = {
 	    .shaderImageGatherExtended = device_features.shader_image_gather_extended,
 	    .shaderStorageImageWriteWithoutFormat = device_features.shader_storage_image_write_without_format,
@@ -1361,6 +1378,13 @@ vk_create_device(struct vk_bundle *vk,
 	if (vk->has_ANDROID_external_format_resolve) {
 		append_to_pnext_chain((VkBaseInStructure *)&device_create_info,
 		                      (VkBaseInStructure *)&ext_fmt_resolve_info);
+	}
+#endif
+
+#ifdef VK_EXT_present_mode_fifo_latest_ready
+	if (vk->has_EXT_present_mode_fifo_latest_ready) {
+		append_to_pnext_chain((VkBaseInStructure *)&device_create_info,
+		                      (VkBaseInStructure *)&ext_latest_ready_info);
 	}
 #endif
 
