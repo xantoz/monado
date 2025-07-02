@@ -346,7 +346,7 @@ static xrt_result_t
 compositor_request_display_refresh_rate(struct xrt_compositor *xc, float display_refresh_rate_hz)
 {
 #ifdef XRT_OS_ANDROID
-	typedef int32_t (*PF_SETFRAMERATE)(ANativeWindow * window, float frameRate, int8_t compatibility);
+	typedef int32_t (*PF_SETFRAMERATE)(ANativeWindow *window, float frameRate, int8_t compatibility);
 
 	// Note that this will just increment the reference count, rather than actually load it again,
 	// since we are linked for other symbols too.
@@ -557,6 +557,9 @@ static const char *required_device_extensions[] = {
 static const char *optional_device_extensions[] = {
     VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME, //
     VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME,   //
+
+    VK_KHR_PRESENT_ID_EXTENSION_NAME,
+    VK_KHR_PRESENT_WAIT_EXTENSION_NAME,
 
 // Platform version of "external_fence" and "external_semaphore"
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
