@@ -198,7 +198,8 @@ target_present(struct comp_target *ct,
                uint32_t index,
                uint64_t timeline_semaphore_value,
                int64_t desired_present_time_ns,
-               int64_t present_slop_ns)
+               int64_t present_slop_ns,
+               uint64_t present_id)
 {
 	struct debug_image_target *dit = (struct debug_image_target *)ct;
 
@@ -209,6 +210,12 @@ target_present(struct comp_target *ct,
 	// For error checking.
 	dit->index = -1;
 
+	return VK_SUCCESS;
+}
+
+static VkResult
+target_wait_for_present(struct comp_target *ct, uint64_t present_id, uint64_t timeout)
+{
 	return VK_SUCCESS;
 }
 
@@ -340,6 +347,7 @@ target_create(struct comp_compositor *c)
 	dit->base.has_images = target_has_images;
 	dit->base.acquire = target_acquire;
 	dit->base.present = target_present;
+	dit->base.wait_for_present = target_wait_for_present;
 	dit->base.flush = target_flush;
 	dit->base.calc_frame_pacing = target_calc_frame_pacing;
 	dit->base.mark_timing_point = target_mark_timing_point;

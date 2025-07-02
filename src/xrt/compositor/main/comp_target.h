@@ -220,13 +220,17 @@ struct comp_target
 	 *                                 if @ref comp_target_semaphores::render_complete_is_timeline is true.
 	 * @param desired_present_time_ns The timestamp to present at, ideally.
 	 * @param present_slop_ns TODO
+	 * @param present_id The ID for this presentation
 	 */
 	VkResult (*present)(struct comp_target *ct,
 	                    VkQueue queue,
 	                    uint32_t index,
 	                    uint64_t timeline_semaphore_value,
 	                    int64_t desired_present_time_ns,
-	                    int64_t present_slop_ns);
+	                    int64_t present_slop_ns,
+	                    uint64_t present_id);
+
+	VkResult (*wait_for_present)(struct comp_target *ct, uint64_t present_id, uint64_t timeout_ns);
 
 	/*!
 	 * Flush any WSI state before rendering.
@@ -427,7 +431,8 @@ comp_target_present(struct comp_target *ct,
                     uint32_t index,
                     uint64_t timeline_semaphore_value,
                     int64_t desired_present_time_ns,
-                    int64_t present_slop_ns)
+                    int64_t present_slop_ns,
+                    uint64_t present_id)
 
 {
 	COMP_TRACE_MARKER();
@@ -438,7 +443,25 @@ comp_target_present(struct comp_target *ct,
 	    index,                    //
 	    timeline_semaphore_value, //
 	    desired_present_time_ns,  //
-	    present_slop_ns);         //
+	    present_slop_ns,          //
+	    present_id);              //
+}
+
+/*!
+ * @copydoc comp_target::wait_for_present
+ *
+ * @public @memberof comp_target
+ * @ingroup comp_main
+ */
+static inline VkResult
+comp_target_wait_for_present(struct comp_target *ct, uint64_t present_id, uint64_t timeout)
+{
+	COMP_TRACE_MARKER();
+
+	return ct->wait_for_present( //
+	    ct,                      //
+	    present_id,              //
+	    timeout);                //
 }
 
 /*!

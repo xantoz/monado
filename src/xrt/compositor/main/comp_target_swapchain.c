@@ -868,7 +868,8 @@ comp_target_swapchain_present(struct comp_target *ct,
                               uint32_t index,
                               uint64_t timeline_semaphore_value,
                               int64_t desired_present_time_ns,
-                              int64_t present_slop_ns)
+                              int64_t present_slop_ns,
+                              uint64_t present_id)
 {
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
 	struct vk_bundle *vk = get_vk(cts);
@@ -876,6 +877,17 @@ comp_target_swapchain_present(struct comp_target *ct,
 	assert(cts->current_frame_id >= 0);
 	assert(cts->current_frame_id <= UINT32_MAX);
 
+	VkPresentInfoKHR present_info = {
+	    .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+	    .pNext = NULL,
+	    .waitSemaphoreCount = 1,
+	    .pWaitSemaphores = &cts->base.semaphores.render_complete,
+	    .swapchainCount = 1,
+	    .pSwapchains = &cts->swapchain.handle,
+	    .pImageIndices = &index,
+	};
+
+#ifdef VK_GOOGLE_display_timing
 	VkPresentTimeGOOGLE times = {
 	    .presentID = (uint32_t)cts->current_frame_id,
 	    .desiredPresentTime = desired_present_time_ns - present_slop_ns,
@@ -887,20 +899,27 @@ comp_target_swapchain_present(struct comp_target *ct,
 	    .pTimes = &times,
 	};
 
-	VkPresentInfoKHR presentInfo = {
-	    .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-	    .pNext = vk->has_GOOGLE_display_timing ? &timings : NULL,
-	    .waitSemaphoreCount = 1,
-	    .pWaitSemaphores = &cts->base.semaphores.render_complete,
+	if (vk->has_GOOGLE_display_timing) {
+		vk_append_to_pnext_chain((VkBaseInStructure *)&present_info, (VkBaseInStructure *)&timings);
+	}
+#endif
+
+#ifdef VK_KHR_present_id
+	VkPresentIdKHR vk_present_id = {
+	    .sType = VK_STRUCTURE_TYPE_PRESENT_ID_KHR,
 	    .swapchainCount = 1,
-	    .pSwapchains = &cts->swapchain.handle,
-	    .pImageIndices = &index,
+	    .pPresentIds = &present_id,
 	};
+
+	if (vk->features.present_wait) {
+		vk_append_to_pnext_chain((VkBaseInStructure *)&present_info, (VkBaseInStructure *)&vk_present_id);
+	}
+#endif
 
 
 	// Need to take the queue lock for present.
 	os_mutex_lock(&vk->queue_mutex);
-	VkResult ret = vk->vkQueuePresentKHR(queue, &presentInfo);
+	VkResult ret = vk->vkQueuePresentKHR(queue, &present_info);
 	os_mutex_unlock(&vk->queue_mutex);
 
 
@@ -916,6 +935,23 @@ comp_target_swapchain_present(struct comp_target *ct,
 #endif
 
 	return ret;
+}
+
+static VkResult
+comp_target_swapchain_wait_for_present(struct comp_target *ct, uint64_t present_id, uint64_t timeout_ns)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	struct vk_bundle *vk = get_vk(cts);
+
+#ifdef VK_KHR_present_wait
+	if (!vk->features.present_wait) {
+		return VK_ERROR_EXTENSION_NOT_PRESENT;
+	}
+
+	return vk->vkWaitForPresentKHR(vk->device, cts->swapchain.handle, present_id, timeout_ns);
+#else
+	return VK_ERROR_EXTENSION_NOT_PRESENT;
+#endif
 }
 
 static bool
@@ -1091,6 +1127,7 @@ comp_target_swapchain_init_and_set_fnptrs(struct comp_target_swapchain *cts,
 	cts->base.has_images = comp_target_swapchain_has_images;
 	cts->base.acquire = comp_target_swapchain_acquire_next_image;
 	cts->base.present = comp_target_swapchain_present;
+	cts->base.wait_for_present = comp_target_swapchain_wait_for_present;
 	cts->base.calc_frame_pacing = comp_target_swapchain_calc_frame_pacing;
 	cts->base.mark_timing_point = comp_target_swapchain_mark_timing_point;
 	cts->base.update_timings = comp_target_swapchain_update_timings;

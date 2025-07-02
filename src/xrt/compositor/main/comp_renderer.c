@@ -818,7 +818,8 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 	    r->acquired_buffer,           //
 	    render_complete_signal_value, //
 	    desired_present_time_ns,      //
-	    present_slop_ns);             //
+	    present_slop_ns,              //
+	    ++r->c->base.vk.present_id);  // increment present ID first, must be non-zero
 	r->acquired_buffer = -1;
 
 	if (ret == VK_ERROR_OUT_OF_DATE_KHR || ret == VK_SUBOPTIMAL_KHR) {
@@ -827,6 +828,57 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 	}
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(r->c, "vk_swapchain_present: %s", vk_result_string(ret));
+	}
+}
+
+static void
+renderer_wait_for_present(struct comp_renderer *r, uint64_t desired_present_time_ns)
+{
+	struct comp_compositor *c = r->c;
+
+	if (!comp_target_check_ready(c->target)) {
+		return;
+	}
+
+	// For estimating frame misses.
+	uint64_t before_ns = os_monotonic_get_ns();
+
+	if (c->base.vk.features.present_wait) {
+		// reasonable timeout
+		uint64_t timeout = c->frame_interval_ns * 1.5f;
+
+		// @note we don't actually care about the return value, just swallow errors, anything critical that's
+		// returned will be handled quite soon by later calls
+		VkResult result = comp_target_wait_for_present(c->target, c->base.vk.present_id, timeout);
+		(void)result;
+	} else {
+		/*
+		 * For direct mode this makes us wait until the last frame has been
+		 * actually shown to the user, this avoids us missing that we have
+		 * missed a frame and miss-predicting the next frame.
+		 *
+		 * Not all drivers follow this behaviour, so KHR_present_wait
+		 * should be preferred in all circumstances.
+		 *
+		 * Only do this if we are ready.
+		 */
+
+		// Do the acquire
+		renderer_acquire_swapchain_image(r);
+
+		uint64_t after_ns = os_monotonic_get_ns();
+
+		// How long did it take?
+		/*
+		 * Make sure we at least waited 1ms before warning. Then check
+		 * if we are more then 1ms behind when we wanted to present.
+		 */
+		if (before_ns + U_TIME_1MS_IN_NS < after_ns && //
+		    desired_present_time_ns + U_TIME_1MS_IN_NS < after_ns) {
+			uint64_t diff_ns = after_ns - desired_present_time_ns;
+			double diff_ms_f = time_ns_to_ms_f(diff_ns);
+			COMP_WARN(c, "Compositor probably missed frame by %.2fms", diff_ms_f);
+		}
 	}
 }
 
@@ -1273,35 +1325,7 @@ comp_renderer_draw(struct comp_renderer *r)
 		render_gfx_fini(&render_g);
 	}
 
-
-	/*
-	 * For direct mode this makes us wait until the last frame has been
-	 * actually shown to the user, this avoids us missing that we have
-	 * missed a frame and miss-predicting the next frame.
-	 *
-	 * Only do this if we are ready.
-	 */
-	if (comp_target_check_ready(r->c->target)) {
-		// For estimating frame misses.
-		uint64_t then_ns = os_monotonic_get_ns();
-
-		// Do the acquire
-		renderer_acquire_swapchain_image(r);
-
-		// How long did it take?
-		uint64_t now_ns = os_monotonic_get_ns();
-
-		/*
-		 * Make sure we at least waited 1ms before warning. Then check
-		 * if we are more then 1ms behind when we wanted to present.
-		 */
-		if (then_ns + U_TIME_1MS_IN_NS < now_ns && //
-		    desired_present_time_ns + U_TIME_1MS_IN_NS < now_ns) {
-			uint64_t diff_ns = now_ns - desired_present_time_ns;
-			double diff_ms_f = time_ns_to_ms_f(diff_ns);
-			COMP_WARN(c, "Compositor probably missed frame by %.2fms", diff_ms_f);
-		}
-	}
+	renderer_wait_for_present(r, desired_present_time_ns);
 
 	comp_target_update_timings(ct);
 

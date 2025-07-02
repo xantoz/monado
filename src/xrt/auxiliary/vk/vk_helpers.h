@@ -64,6 +64,7 @@ struct vk_bundle
 	uint32_t encode_queue_index;
 	VkQueue encode_queue;
 #endif
+	uint64_t present_id;
 
 	struct os_mutex queue_mutex;
 
