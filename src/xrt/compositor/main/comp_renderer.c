@@ -859,7 +859,7 @@ renderer_wait_for_present(struct comp_renderer *r, uint64_t desired_present_time
 		VkResult result = comp_target_wait_for_present(c->target, c->base.vk.present_id, timeout);
 
 		uint64_t after_ns_waitforpresent = os_monotonic_get_ns();
-		printf("WAIT    before: %10luus after: %10luus WAIT GOT RESULT %d, WAITED %luus, timeout %luus\n",
+		printf("WAIT    before: %10luus aftxer: %10luus WAITED %luus, WAIT GOT RESULT %d, timeout %luus\n",
 		       before_ns/1000, after_ns_waitforpresent/1000, (after_ns_waitforpresent - before_ns) / 1000, result, timeout / 1000);
 
 		(void)result;
