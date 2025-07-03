@@ -812,6 +812,8 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 	assert(!comp_frame_is_invalid_locked(&r->c->frame.rendering));
 	uint64_t render_complete_signal_value = (uint64_t)r->c->frame.rendering.id;
 
+	uint64_t before_ns_present = os_monotonic_get_ns();
+
 	ret = comp_target_present(        //
 	    r->c->target,                 //
 	    r->c->base.vk.queue,          //
@@ -821,6 +823,11 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 	    present_slop_ns,              //
 	    ++r->c->base.vk.present_id);  // increment present ID first, must be non-zero
 	r->acquired_buffer = -1;
+
+	uint64_t after_ns_present = os_monotonic_get_ns();
+
+	printf("PRESENT before: %10luus after: %10luus WAITED %luus\n",
+	       before_ns_present/1000, after_ns_present/1000, (after_ns_present - before_ns_present) / 1000);
 
 	if (ret == VK_ERROR_OUT_OF_DATE_KHR || ret == VK_SUBOPTIMAL_KHR) {
 		renderer_resize(r);
@@ -850,8 +857,15 @@ renderer_wait_for_present(struct comp_renderer *r, uint64_t desired_present_time
 		// @note we don't actually care about the return value, just swallow errors, anything critical that's
 		// returned will be handled quite soon by later calls
 		VkResult result = comp_target_wait_for_present(c->target, c->base.vk.present_id, timeout);
+
+		uint64_t after_ns_waitforpresent = os_monotonic_get_ns();
+		printf("WAIT    before: %10luus after: %10luus WAIT GOT RESULT %d, WAITED %luus, timeout %luus\n",
+		       before_ns/1000, after_ns_waitforpresent/1000, (after_ns_waitforpresent - before_ns) / 1000, result, timeout / 1000);
+
 		(void)result;
-	} else {
+	}
+	else
+	{
 
 		/*
 		 * For direct mode this makes us wait until the last frame has been
@@ -864,8 +878,15 @@ renderer_wait_for_present(struct comp_renderer *r, uint64_t desired_present_time
 		 * Only do this if we are ready.
 		 */
 
+		uint64_t before_ns_acquire = os_monotonic_get_ns();
+
 		// Do the acquire
 		renderer_acquire_swapchain_image(r);
+
+		uint64_t after_ns_acquire = os_monotonic_get_ns();
+
+		printf("ACQUIRE before: %10luus after: %10luus WAITED %luus\n",
+		       before_ns_acquire/1000, after_ns_acquire/1000, (after_ns_acquire - before_ns_acquire) / 1000);
 	}
 
 	uint64_t after_ns = os_monotonic_get_ns();
