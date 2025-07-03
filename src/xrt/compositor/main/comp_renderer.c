@@ -747,6 +747,8 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 	assert(!comp_frame_is_invalid_locked(&r->c->frame.rendering));
 	uint64_t render_complete_signal_value = (uint64_t)r->c->frame.rendering.id;
 
+	uint64_t before_ns_present = os_monotonic_get_ns();
+
 	ret = comp_target_present(        //
 	    r->c->target,                 //
 	    r->c->base.vk.queue,          //
@@ -755,6 +757,11 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 	    desired_present_time_ns,      //
 	    present_slop_ns);             //
 	r->acquired_buffer = -1;
+
+	uint64_t after_ns_present = os_monotonic_get_ns();
+
+	printf("PRESENT before: %10luus after: %10luus WAITED %luus\n",
+	       before_ns_present/1000, after_ns_present/1000, (after_ns_present - before_ns_present) / 1000);
 
 	if (ret == VK_ERROR_OUT_OF_DATE_KHR || ret == VK_SUBOPTIMAL_KHR) {
 		renderer_resize(r);
@@ -787,6 +794,10 @@ renderer_wait_for_present(struct comp_renderer *r, uint64_t desired_present_time
 		(void)result;
 
 		assert(result != VK_ERROR_EXTENSION_NOT_PRESENT);
+
+		uint64_t after_ns_waitforpresent = os_monotonic_get_ns();
+		printf("WAIT    before: %10luus after: %10luus WAITED %luus, WAIT GOT RESULT %d, timeout %luus\n",
+		       before_ns/1000, after_ns_waitforpresent/1000, (after_ns_waitforpresent - before_ns) / 1000, result, timeout_ns / 1000);
 	} else {
 		/*
 		 * For direct mode this makes us wait until the last frame has been
@@ -799,8 +810,15 @@ renderer_wait_for_present(struct comp_renderer *r, uint64_t desired_present_time
 		 * Only do this if we are ready.
 		 */
 
+		uint64_t before_ns_acquire = os_monotonic_get_ns();
+
 		// Do the acquire
 		renderer_acquire_swapchain_image(r);
+
+		uint64_t after_ns_acquire = os_monotonic_get_ns();
+
+		printf("ACQUIRE before: %10luus after: %10luus WAITED %luus\n",
+		       before_ns_acquire/1000, after_ns_acquire/1000, (after_ns_acquire - before_ns_acquire) / 1000);
 	}
 
 	// How long did it take?
