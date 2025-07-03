@@ -467,11 +467,16 @@ vblank_event_func(struct comp_target *ct, int64_t *out_timestamp_ns)
 	// Not scoped to not effect timing.
 	COMP_TRACE_IDENT(vblank);
 
+	uint64_t before_ns_fence = os_monotonic_get_ns();
+
 	// Do the wait
 	ret = vk->vkWaitForFences(vk->device, 1, &vblank_event_fence, true, time_s_to_ns(1));
 
 	// As quickly as possible after the fence has fired.
 	int64_t now_ns = os_monotonic_get_ns();
+
+	printf("FENCE   before: %10luus after: %10luus WAITED %luus\n",
+	       before_ns_fence/1000, now_ns/1000, (now_ns - before_ns_fence) / 1000);
 
 	bool valid = false;
 	if (ret == VK_SUCCESS) {
