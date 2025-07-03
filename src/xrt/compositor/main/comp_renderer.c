@@ -851,21 +851,22 @@ renderer_wait_for_present(struct comp_renderer *r, uint64_t desired_present_time
 		// returned will be handled quite soon by later calls
 		VkResult result = comp_target_wait_for_present(c->target, c->base.vk.present_id, timeout);
 		(void)result;
+	} else {
+
+		/*
+		 * For direct mode this makes us wait until the last frame has been
+		 * actually shown to the user, this avoids us missing that we have
+		 * missed a frame and miss-predicting the next frame.
+		 *
+		 * Not all drivers follow this behaviour, so KHR_present_wait
+		 * should be preferred in all circumstances.
+		 *
+		 * Only do this if we are ready.
+		 */
+
+		// Do the acquire
+		renderer_acquire_swapchain_image(r);
 	}
-
-	/*
-	 * For direct mode this makes us wait until the last frame has been
-	 * actually shown to the user, this avoids us missing that we have
-	 * missed a frame and miss-predicting the next frame.
-	 *
-	 * Not all drivers follow this behaviour, so KHR_present_wait
-	 * should be preferred in all circumstances.
-	 *
-	 * Only do this if we are ready.
-	 */
-
-	// Do the acquire
-	renderer_acquire_swapchain_image(r);
 
 	uint64_t after_ns = os_monotonic_get_ns();
 
