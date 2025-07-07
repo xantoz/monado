@@ -779,7 +779,7 @@ renderer_wait_for_present(struct comp_renderer *r, uint64_t desired_present_time
 
 	if (c->target->wait_for_present_supported) {
 		// reasonable timeout
-		time_duration_ns timeout_ns = c->frame_interval_ns * 2.5f;
+		time_duration_ns timeout_ns = c->frame_interval_ns * 1.5f;
 
 		// @note we don't actually care about the return value, just swallow errors, anything *critical* that
 		// may be returned will be handled quite soon by later calls
