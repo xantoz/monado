@@ -140,6 +140,12 @@ struct comp_renderer
 	 */
 	uint32_t buffer_count;
 
+	/*!
+	 * The amount of times the compositor experienced a frame drop.
+	 * For debugging.
+	 */
+	uint64_t compositor_frame_drops;
+
 	//! @}
 };
 
@@ -541,6 +547,9 @@ renderer_init(struct comp_renderer *r, struct comp_compositor *c, VkExtent2D scr
 		COMP_ERROR(c, "comp_mirror_init: %s", vk_result_string(ret));
 		assert(false && "Whelp, can't return a error. But should never really fail.");
 	}
+
+	u_var_add_root(r, "Compositor renderer info", true);
+	u_var_add_ro_u64(r, &r->compositor_frame_drops, "Compositor frame drops");
 }
 
 static void
@@ -806,6 +815,7 @@ renderer_wait_for_present(struct comp_renderer *r, uint64_t desired_present_time
 		uint64_t diff_ns = after_ns - desired_present_time_ns;
 		double diff_ms_f = time_ns_to_ms_f(diff_ns);
 		COMP_WARN(c, "Compositor probably missed frame by %.2fms", diff_ms_f);
+		++r->compositor_frame_drops;
 	}
 }
 
