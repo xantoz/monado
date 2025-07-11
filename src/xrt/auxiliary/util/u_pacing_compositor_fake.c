@@ -471,8 +471,8 @@ u_pc_fake_create(int64_t estimated_frame_period_ns, int64_t now_ns, struct u_pac
 	    .max = +40.0,
 	};
 
-	// 20% of the frame time.
-	ft->comp_time_ns = get_percent_of_time(estimated_frame_period_ns, 20);
+	// 95% of the frame time.
+	ft->comp_time_ns = get_percent_of_time(estimated_frame_period_ns, 95);
 
 	// Or at least a certain amount of time.
 	float min_comp_time_ms_f = debug_get_float_option_min_comp_time_ms();
