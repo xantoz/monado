@@ -52,6 +52,12 @@ poll_events(struct xrt_session *xs, union xrt_session_event *out_xse)
 }
 
 static xrt_result_t
+update_devices(struct xrt_session *xs)
+{
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
 request_exit(struct xrt_session *xs)
 {
 	struct b_session *bs = b_session(xs);
@@ -101,6 +107,7 @@ b_session_create(struct b_system *bsys)
 
 	// xrt_session fields.
 	bs->base.poll_events = poll_events;
+	bs->base.update_devices = update_devices;
 	bs->base.request_exit = request_exit;
 	bs->base.destroy = destroy;
 

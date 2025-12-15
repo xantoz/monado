@@ -285,6 +285,13 @@ struct xrt_session
 	xrt_result_t (*poll_events)(struct xrt_session *xs, union xrt_session_event *out_xse);
 
 	/*!
+	 * Update the device list and roles.
+	 *
+	 * @param xs Pointer to self
+	 */
+	xrt_result_t (*update_devices)(struct xrt_session *xs);
+
+	/*!
 	 * Request this session to exit.
 	 *
 	 * @param xs Pointer to self
@@ -312,6 +319,19 @@ XRT_CHECK_RESULT XRT_NONNULL_ALL static inline xrt_result_t
 xrt_session_poll_events(struct xrt_session *xs, union xrt_session_event *out_xse)
 {
 	return xs->poll_events(xs, out_xse);
+}
+
+/*!
+ * @copydoc xrt_session::update_devices
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_session
+ */
+XRT_CHECK_RESULT static inline xrt_result_t
+xrt_session_update_devices(struct xrt_session *xs)
+{
+	return xs->update_devices(xs);
 }
 
 /*!

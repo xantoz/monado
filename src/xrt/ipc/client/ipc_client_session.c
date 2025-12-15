@@ -56,6 +56,12 @@ ipc_client_session_poll_events(struct xrt_session *xs, union xrt_session_event *
 	IPC_CHK_ALWAYS_RET(ics->ipc_c, xret, "ipc_call_session_poll_events");
 }
 
+static xrt_result_t
+ipc_client_session_update_devices(struct xrt_session *xs)
+{
+	return XRT_SUCCESS;
+}
+
 static void
 ipc_client_session_destroy(struct xrt_session *xs)
 {
@@ -89,6 +95,7 @@ ipc_client_session_create(struct ipc_connection *ipc_c)
 {
 	struct ipc_client_session *ics = U_TYPED_CALLOC(struct ipc_client_session);
 	ics->base.poll_events = ipc_client_session_poll_events;
+	ics->base.update_devices = ipc_client_session_update_devices;
 	ics->base.destroy = ipc_client_session_destroy;
 	ics->ipc_c = ipc_c;
 
