@@ -80,6 +80,8 @@ struct ipc_client_instance
 
 	struct ipc_connection ipc_c;
 
+	struct ipc_client_system_devices *icsd;
+
 #ifdef XRT_OS_ANDROID
 	struct android_instance_base android;
 #endif
@@ -157,11 +159,7 @@ ipc_client_instance_create_system(struct xrt_instance *xinst,
 
 	struct xrt_system_compositor *xsysc = NULL;
 
-	// Allocate a helper xrt_system_devices struct.
-	struct ipc_client_system_devices *icsd = NULL;
-	xret = ipc_client_system_devices_create(&ii->ipc_c, &icsd);
-	IPC_CHK_AND_RET(&ii->ipc_c, xret, "ipc_client_system_devices_create");
-
+	struct ipc_client_system_devices *icsd = ii->icsd;
 	struct xrt_system_devices *xsysd = &icsd->base.base;
 
 	// Query the server for the list of devices
@@ -314,6 +312,19 @@ ipc_instance_create(const struct xrt_instance_info *i_info, struct xrt_instance 
 		free(ii);
 		return xret;
 	}
+
+	// Allocate a helper xrt_system_devices struct.
+	struct ipc_client_system_devices *icsd = NULL;
+	xret = ipc_client_system_devices_create(&ii->ipc_c, &icsd);
+	if (xret != XRT_SUCCESS) {
+		IPC_CHK_ONLY_PRINT(&ii->ipc_c, xret, "ipc_client_system_devices_create");
+#ifdef XRT_OS_ANDROID
+		android_instance_base_cleanup(&(ii->android), &(ii->base));
+#endif
+		free(ii);
+		return xret;
+	}
+	ii->icsd = icsd;
 
 	ii->base.startup_timestamp = ii->ipc_c.ism->startup_timestamp;
 
