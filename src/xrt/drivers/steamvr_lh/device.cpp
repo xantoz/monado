@@ -215,13 +215,6 @@ const std::unordered_map<std::string_view, InputClass> controller_classes{
         },
     },
 };
-int64_t
-chrono_timestamp_ns()
-{
-	auto now = std::chrono::steady_clock::now().time_since_epoch();
-	int64_t ts = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
-	return ts;
-}
 
 // Template for calling a member function of Device from a free function
 template <typename DeviceType, auto Func, typename Ret, typename... Args>

@@ -31,6 +31,14 @@
 #include <condition_variable>
 #include <mutex>
 
+static inline int64_t
+chrono_timestamp_ns()
+{
+	auto now = std::chrono::steady_clock::now().time_since_epoch();
+	int64_t ts = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
+	return ts;
+}
+
 class Context;
 struct InputClass;
 

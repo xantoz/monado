@@ -868,29 +868,29 @@ Context::Log(const char *pchLogMessage)
 static xrt_result_t
 add_device(struct xrt_system_devices *xsysd, struct xrt_device *xdev)
 {
-	if (xsysd->xdev_count + 1 > ARRAY_SIZE(xsysd->static_xdevs)) {
+	if (xsysd->static_xdev_count + 1 > ARRAY_SIZE(xsysd->static_xdevs)) {
 		return XRT_ERROR_ALLOCATION;
 	}
 
 	if (xdev->device_type == XRT_DEVICE_TYPE_HMD) {
 		struct xrt_device *xdev0 = xsysd->static_xdevs[0];
 
-		if (xsysd->xdev_count >= 1 && xdev0 && xdev0->device_type == XRT_DEVICE_TYPE_HMD) {
+		if (xsysd->static_xdev_count >= 1 && xdev0 && xdev0->device_type == XRT_DEVICE_TYPE_HMD) {
 			xdev0 = NULL;
-			xsysd->xdev_count -= 1;
+			xsysd->static_xdev_count -= 1;
 		}
 
 		xsysd->static_xdevs[0] = xdev;
 
-		if (xsysd->xdev_count >= 1) {
+		if (xsysd->static_xdev_count >= 1) {
 			if (xdev0) {
-				xsysd->static_xdevs[xsysd->xdev_count++] = xdev0;
+				xsysd->static_xdevs[xsysd->static_xdev_count++] = xdev0;
 			}
 		} else {
-			xsysd->xdev_count = 1;
+			xsysd->static_xdev_count = 1;
 		}
 	} else {
-		xsysd->static_xdevs[xsysd->xdev_count++] = xdev;
+		xsysd->static_xdevs[xsysd->static_xdev_count++] = xdev;
 	}
 
 	xrt_space_overseer_add_device((struct xrt_space_overseer*)svrs->uso, xdev);
@@ -899,27 +899,149 @@ add_device(struct xrt_system_devices *xsysd, struct xrt_device *xdev)
 	return XRT_SUCCESS;
 }
 
+static enum xrt_input_name
+find_suitable_pose_name(struct xrt_device *xdev)
+{
+	//! @todo More complete set of poses / a system to enumerate all canonical device poses.
+	for (uint32_t i = 0; i < xdev->input_count; i++) {
+		enum xrt_input_name name = xdev->inputs[i].name;
+		switch (name) {
+		case XRT_INPUT_GENERIC_HEAD_POSE: return name;
+		case XRT_INPUT_GENERIC_TRACKER_POSE: return name;
+		case XRT_INPUT_INDEX_GRIP_POSE: return name;
+		case XRT_INPUT_SIMPLE_GRIP_POSE: return name;
+		case XRT_INPUT_VIVE_GRIP_POSE: return name;
+		case XRT_INPUT_VIVE_COSMOS_GRIP_POSE: return name;
+		case XRT_INPUT_VIVE_FOCUS3_GRIP_POSE: return name;
+		case XRT_INPUT_VIVE_TRACKER_GRIP_POSE: return name;
+		case XRT_INPUT_WMR_GRIP_POSE: return name;
+		case XRT_INPUT_PSMV_GRIP_POSE: return name;
+		case XRT_INPUT_G2_CONTROLLER_GRIP_POSE: return name;
+		case XRT_INPUT_GO_GRIP_POSE: return name;
+		case XRT_INPUT_ODYSSEY_CONTROLLER_GRIP_POSE: return name;
+		case XRT_INPUT_TOUCH_GRIP_POSE: return name;
+		case XRT_INPUT_TOUCH_PLUS_GRIP_POSE: return name;
+		case XRT_INPUT_TOUCH_PRO_GRIP_POSE: return name;
+		case XRT_INPUT_PICO_G3_GRIP_POSE: return name;
+		case XRT_INPUT_PICO_NEO3_GRIP_POSE: return name;
+		case XRT_INPUT_PICO4_GRIP_POSE: return name;
+		case XRT_INPUT_OPPO_MR_GRIP_POSE: return name;
+		default: break;
+		}
+	}
+
+	return (enum xrt_input_name)0;
+}
+
+static void
+select_xdev_roles(
+    struct xrt_system_devices *xsysd, int *head, int *eyes, int *face, int *left, int *right, int *gamepad)
+{
+	struct steamvr_lh_system *svrs = (struct steamvr_lh_system *)xsysd;
+
+	u_device_assign_xdev_roles(xsysd->static_xdevs, xsysd->static_xdev_count, head, eyes, face, left, right,
+	                           gamepad);
+
+	enum xrt_space_relation_flags wanted_flags = (enum xrt_space_relation_flags)(
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
+	struct xrt_device *xdevs[XRT_SYSTEM_MAX_DEVICES];
+	int indices[XRT_SYSTEM_MAX_DEVICES];
+	uint32_t xdev_count = 0;
+
+	memset(xdevs, 0, sizeof(xdevs));
+
+	for (uint32_t i = 0; i < xsysd->static_xdev_count; i++) {
+		struct xrt_device *xdev = xsysd->static_xdevs[i];
+
+		enum xrt_space_relation_flags relation_flags = XRT_SPACE_RELATION_BITMASK_ALL;
+		enum xrt_input_name name = find_suitable_pose_name(xdev);
+		if (name != 0) {
+			struct xrt_space_relation xsr;
+			xrt_device_get_tracked_pose(xdev, name, chrono_timestamp_ns(), &xsr);
+			relation_flags = xsr.relation_flags;
+		}
+
+		if ((relation_flags & wanted_flags) == wanted_flags) {
+			xdevs[xdev_count] = xdev;
+			indices[xdev_count] = i;
+			xdev_count++;
+		}
+	}
+
+	int head2, eyes2, face2, left2, right2, gamepad2;
+	u_device_assign_xdev_roles(xdevs, xdev_count, &head2, &eyes2, &face2, &left2, &right2, &gamepad2);
+
+	if (head2 != XRT_DEVICE_ROLE_UNASSIGNED) {
+		*head = indices[head2];
+	}
+
+	if (left2 != XRT_DEVICE_ROLE_UNASSIGNED) {
+		left2 = indices[left2];
+	}
+	if (right2 != XRT_DEVICE_ROLE_UNASSIGNED) {
+		right2 = indices[right2];
+	}
+
+
+	if ((left2 == XRT_DEVICE_ROLE_UNASSIGNED && right2 == XRT_DEVICE_ROLE_UNASSIGNED) ||
+	    (left2 == svrs->prev_roles.right && right2 == svrs->prev_roles.left)) {
+		left2 = svrs->prev_roles.left;
+		right2 = svrs->prev_roles.right;
+	} else {
+		if (left2 != XRT_DEVICE_ROLE_UNASSIGNED && left2 == svrs->prev_roles.right &&
+		    right2 == XRT_DEVICE_ROLE_UNASSIGNED) {
+			right2 = left2;
+			left2 = svrs->prev_roles.left;
+		} else if (right2 != XRT_DEVICE_ROLE_UNASSIGNED && right2 == svrs->prev_roles.left &&
+		           left2 == XRT_DEVICE_ROLE_UNASSIGNED) {
+			left2 = right2;
+			right2 = svrs->prev_roles.right;
+		}
+
+		if (left2 != XRT_DEVICE_ROLE_UNASSIGNED && left2 == svrs->prev_roles.left &&
+		    right2 == XRT_DEVICE_ROLE_UNASSIGNED && svrs->prev_roles.right != XRT_DEVICE_ROLE_UNASSIGNED) {
+			right2 = svrs->prev_roles.right;
+		} else if (right2 != XRT_DEVICE_ROLE_UNASSIGNED && right2 == svrs->prev_roles.right &&
+		           left2 == XRT_DEVICE_ROLE_UNASSIGNED && svrs->prev_roles.left != XRT_DEVICE_ROLE_UNASSIGNED) {
+			left2 = svrs->prev_roles.left;
+		}
+	}
+
+	*left = left2;
+	*right = right2;
+}
+
 xrt_result_t
 get_roles(struct xrt_system_devices *xsysd, struct xrt_system_roles *out_roles)
 {
+#define MIN_CHANGE_TIME_NS U_TIME_1S_IN_NS
+	static int64_t last_not_updated_ns = 0;
+
 	struct steamvr_lh_system *svrs = (struct steamvr_lh_system *)xsysd;
 
 	bool update_gen = false;
 	int head, eyes, face, left, right, gamepad;
 
-	u_device_assign_xdev_roles(xsysd->static_xdevs, xsysd->static_xdev_count, &head, &eyes, &face, &left, &right,
-	                           &gamepad);
+	select_xdev_roles(xsysd, &head, &eyes, &face, &left, &right, &gamepad);
 
 	if (left != svrs->prev_roles.left || right != svrs->prev_roles.right || gamepad != svrs->prev_roles.gamepad) {
 		update_gen = true;
 	}
 
+	int64_t now_ns = chrono_timestamp_ns();
+	if (!update_gen) {
+		last_not_updated_ns = now_ns;
+	} else if (now_ns - last_not_updated_ns < MIN_CHANGE_TIME_NS) {
+		left = svrs->prev_roles.left;
+		right = svrs->prev_roles.right;
+		gamepad = svrs->prev_roles.gamepad;
+		update_gen = false;
+	}
+
+
 	if (update_gen) {
-		U_LOG_W("Roles updated: %d != %d || %d != %d || %d != %d",
-			out_roles->left, left,
-			out_roles->right, right,
-			out_roles->gamepad, gamepad
-		);
+		U_LOG_W("Roles updated: %d != %d || %d != %d || %d != %d", out_roles->left, left, out_roles->right,
+		        right, out_roles->gamepad, gamepad);
 
 		svrs->prev_roles.generation_id++;
 		svrs->prev_roles.left = left;
