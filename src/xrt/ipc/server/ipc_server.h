@@ -514,6 +514,14 @@ void
 ipc_server_deactivate_session(volatile struct ipc_client_state *ics);
 
 /*!
+ * Called by client threads to update the device list.
+ *
+ * @ingroup ipc_server
+ */
+xrt_result_t
+ipc_server_update_devices(volatile struct ipc_client_state *ics);
+
+/*!
  * Called by client threads to recalculate active client.
  *
  * @ingroup ipc_server

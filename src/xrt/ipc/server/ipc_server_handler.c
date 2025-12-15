@@ -2612,6 +2612,12 @@ ipc_handle_device_is_form_factor_available(volatile struct ipc_client_state *ics
 }
 
 xrt_result_t
+ipc_handle_system_update_devices(volatile struct ipc_client_state *ics)
+{
+	return ipc_server_update_devices(ics);
+}
+
+xrt_result_t
 ipc_handle_system_devices_get_list(volatile struct ipc_client_state *ics, struct ipc_device_list *out_list)
 {
 	// Count and collect device types

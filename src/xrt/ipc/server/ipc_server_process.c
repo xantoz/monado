@@ -694,6 +694,20 @@ update_device_list(struct ipc_server *s, volatile struct ipc_client_state *ics)
 	return XRT_SUCCESS;
 }
 
+static xrt_result_t
+update_client_devices_locked(volatile struct ipc_client_state *ics)
+{
+	struct ipc_server *s = ics->server;
+	struct ipc_shared_memory *ism = s->isms[ics->server_thread_index];
+
+	xrt_result_t xret = update_device_list(s, ics);
+	IPC_CHK_AND_RET(s, xret, "update_client_devices_locked");
+
+	update_device_roles(s, ism);
+
+	return XRT_SUCCESS;
+}
+
 
 /*
  *
@@ -827,6 +841,21 @@ ipc_server_deactivate_session(volatile struct ipc_client_state *ics)
 	update_server_state_locked(s);
 
 	os_mutex_unlock(&s->global_state.lock);
+}
+
+xrt_result_t
+ipc_server_update_devices(volatile struct ipc_client_state *ics)
+{
+	struct ipc_server *s = ics->server;
+
+	// Multiple threads could call this at the same time.
+	os_mutex_lock(&s->global_state.lock);
+
+	xrt_result_t xret = update_client_devices_locked(ics);
+
+	os_mutex_unlock(&s->global_state.lock);
+
+	return xret;
 }
 
 void
