@@ -62,7 +62,11 @@ ipc_client_session_poll_events(struct xrt_session *xs, union xrt_session_event *
 static xrt_result_t
 ipc_client_session_update_devices(struct xrt_session *xs)
 {
-	return XRT_SUCCESS;
+	struct ipc_client_session *ics = ipc_session(xs);
+	xrt_result_t xret;
+
+	xret = ipc_client_instance_update_devices(ics->ii);
+	IPC_CHK_ALWAYS_RET(ics->ipc_c, xret, "ipc_client_instance_update_devices");
 }
 
 static void

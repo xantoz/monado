@@ -15,8 +15,18 @@ extern "C" {
 #endif
 
 
+struct ipc_client_instance;
 struct xrt_instance;
 struct xrt_instance_info;
+
+/*!
+ * Update device assignments.
+ *
+ * @see ipc_design
+ * @ingroup ipc_client
+ */
+xrt_result_t
+ipc_client_instance_update_devices(struct ipc_client_instance *ii);
 
 /*!
  * Create a IPC client instance, connects to a IPC server.

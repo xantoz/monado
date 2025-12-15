@@ -889,11 +889,14 @@ do_wait_frame_and_checks(struct oxr_logger *log,
 	int64_t predicted_display_time = 0;
 	int64_t predicted_display_period = 0;
 
-	xrt_result_t xret = xrt_comp_wait_frame( //
-	    sess->compositor,                    // compositor
-	    &frame_id,                           // out_frame_id
-	    &predicted_display_time,             // out_predicted_display_time
-	    &predicted_display_period);          // out_predicted_display_period
+	xrt_result_t xret = xrt_session_update_devices(sess->xs);
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_wait_frame);
+
+	xret = xrt_comp_wait_frame(     //
+	    sess->compositor,           // compositor
+	    &frame_id,                  // out_frame_id
+	    &predicted_display_time,    // out_predicted_display_time
+	    &predicted_display_period); // out_predicted_display_period
 	OXR_CHECK_XRET(log, sess, xret, xrt_comp_wait_frame);
 
 	if (frame_id < 0) {

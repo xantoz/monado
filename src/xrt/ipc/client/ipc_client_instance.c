@@ -323,6 +323,25 @@ ipc_client_instance_destroy(struct xrt_instance *xinst)
  *
  */
 
+xrt_result_t
+ipc_client_instance_update_devices(struct ipc_client_instance *ii)
+{
+	xrt_result_t xret = XRT_SUCCESS;
+
+	xret = ipc_call_system_update_devices(&ii->ipc_c);
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
+	xret = update_device_list(ii);
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
+	update_device_roles(ii);
+	return XRT_SUCCESS;
+}
+
 /*!
  * Constructor for xrt_instance IPC client proxy.
  *
