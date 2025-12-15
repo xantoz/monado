@@ -9,6 +9,8 @@
  * @ingroup base
  */
 
+#pragma once
+
 #include "xrt/xrt_space.h"
 
 

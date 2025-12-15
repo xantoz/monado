@@ -139,10 +139,13 @@ steamvr_open_system(struct xrt_builder *xb,
 	assert(out_xsysd != NULL);
 	assert(*out_xsysd == NULL);
 
-	enum xrt_result result = steamvr_lh_create_devices(xp, out_xsysd);
+	struct b_space_overseer *uso = b_space_overseer_create(broadcast);
+
+	enum xrt_result result = steamvr_lh_create_devices(xp, uso, out_xsysd);
 
 	if (result != XRT_SUCCESS) {
 		SVR_ERROR("Unable to create devices");
+		xrt_space_overseer_destroy((struct xrt_space_overseer **)&uso);
 		return result;
 	}
 
@@ -151,6 +154,7 @@ steamvr_open_system(struct xrt_builder *xb,
 
 	if (xsysd->static_roles.head == NULL) {
 		SVR_ERROR("Unable to find HMD");
+		xrt_space_overseer_destroy((struct xrt_space_overseer **)&uso);
 		return XRT_ERROR_DEVICE_CREATION_FAILED;
 	}
 
@@ -168,8 +172,6 @@ steamvr_open_system(struct xrt_builder *xb,
 	/*
 	 * Space overseer.
 	 */
-
-	struct b_space_overseer *uso = b_space_overseer_create(broadcast);
 
 	struct xrt_pose T_stage_local = XRT_POSE_IDENTITY;
 

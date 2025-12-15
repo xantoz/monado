@@ -97,8 +97,14 @@ struct steamvr_lh_system
 	// System devices wrapper.
 	struct xrt_system_devices base;
 
+	//! Pointer to space overseer.
+	struct b_space_overseer *uso;
+
 	//! Pointer to driver context
 	std::shared_ptr<Context> ctx;
+
+	// Roles from last call to get_roles
+	struct xrt_system_roles prev_roles;
 };
 
 struct steamvr_lh_system *svrs = U_TYPED_CALLOC(struct steamvr_lh_system);
@@ -302,6 +308,7 @@ Context::setup_hmd(const char *serial, vr::ITrackedDeviceServerDriver *driver)
 
 	hmd_parts->display = display;
 	hmd->set_hmd_parts(std::move(hmd_parts));
+	xrt_system_devices_add_device(&svrs->base, hmd);
 
 	return true;
 }
@@ -351,6 +358,7 @@ Context::setup_controller(const char *serial, vr::ITrackedDeviceServerDriver *dr
 	default: break;
 	}
 
+	xrt_system_devices_add_device(&svrs->base, controller[device_idx]);
 	return true;
 }
 
@@ -860,28 +868,63 @@ Context::Log(const char *pchLogMessage)
 static xrt_result_t
 add_device(struct xrt_system_devices *xsysd, struct xrt_device *xdev)
 {
-	return XRT_ERROR_FEATURE_NOT_SUPPORTED;
+	if (xsysd->xdev_count + 1 > ARRAY_SIZE(xsysd->static_xdevs)) {
+		return XRT_ERROR_ALLOCATION;
+	}
+
+	if (xdev->device_type == XRT_DEVICE_TYPE_HMD) {
+		struct xrt_device *xdev0 = xsysd->static_xdevs[0];
+
+		if (xsysd->xdev_count >= 1 && xdev0 && xdev0->device_type == XRT_DEVICE_TYPE_HMD) {
+			xdev0 = NULL;
+			xsysd->xdev_count -= 1;
+		}
+
+		xsysd->static_xdevs[0] = xdev;
+
+		if (xsysd->xdev_count >= 1) {
+			if (xdev0) {
+				xsysd->static_xdevs[xsysd->xdev_count++] = xdev0;
+			}
+		} else {
+			xsysd->xdev_count = 1;
+		}
+	} else {
+		xsysd->static_xdevs[xsysd->xdev_count++] = xdev;
+	}
+
+	xrt_space_overseer_add_device((struct xrt_space_overseer*)svrs->uso, xdev);
+
+	U_LOG_W("Device registered: %s (%s)", xdev->serial, xdev->str);
+	return XRT_SUCCESS;
 }
 
 xrt_result_t
 get_roles(struct xrt_system_devices *xsysd, struct xrt_system_roles *out_roles)
 {
+	struct steamvr_lh_system *svrs = (struct steamvr_lh_system *)xsysd;
+
 	bool update_gen = false;
 	int head, eyes, face, left, right, gamepad;
 
 	u_device_assign_xdev_roles(xsysd->static_xdevs, xsysd->static_xdev_count, &head, &eyes, &face, &left, &right,
 	                           &gamepad);
 
-	if (left != out_roles->left || right != out_roles->right || gamepad != out_roles->gamepad) {
+	if (left != svrs->prev_roles.left || right != svrs->prev_roles.right || gamepad != svrs->prev_roles.gamepad) {
 		update_gen = true;
 	}
 
 	if (update_gen) {
-		out_roles->generation_id++;
+		U_LOG_W("Roles updated: %d != %d || %d != %d || %d != %d",
+			out_roles->left, left,
+			out_roles->right, right,
+			out_roles->gamepad, gamepad
+		);
 
-		out_roles->left = left;
-		out_roles->right = right;
-		out_roles->gamepad = gamepad;
+		svrs->prev_roles.generation_id++;
+		svrs->prev_roles.left = left;
+		svrs->prev_roles.right = right;
+		svrs->prev_roles.gamepad = gamepad;
 
 		if (left != XRT_DEVICE_ROLE_UNASSIGNED) {
 			auto *left_dev = static_cast<ControllerDevice *>(xsysd->static_xdevs[left]);
@@ -893,6 +936,11 @@ get_roles(struct xrt_system_devices *xsysd, struct xrt_system_roles *out_roles)
 			right_dev->set_active_hand(XRT_HAND_RIGHT);
 		}
 	}
+
+	out_roles->generation_id = svrs->prev_roles.generation_id;
+	out_roles->left = left;
+	out_roles->right = right;
+	out_roles->gamepad = gamepad;
 
 	return XRT_SUCCESS;
 }
@@ -909,7 +957,7 @@ destroy(struct xrt_system_devices *xsysd)
 }
 
 extern "C" enum xrt_result
-steamvr_lh_create_devices(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
+steamvr_lh_create_devices(struct xrt_prober *xp, struct b_space_overseer *uso, struct xrt_system_devices **out_xsysd)
 {
 	u_logging_level level = debug_get_log_option_lh_log();
 	// The driver likes to create a bunch of transient folders -
@@ -969,6 +1017,15 @@ steamvr_lh_create_devices(struct xrt_prober *xp, struct xrt_system_devices **out
 	if (debug_get_bool_option_lh_load_slimevr() &&
 	    !loadDriver("/drivers/slimevr/bin/" OVR_PLAT_SUBDIR "/driver_slimevr" OVR_PLAT_EXT, false))
 		return xrt_result::XRT_ERROR_DEVICE_CREATION_FAILED;
+
+	struct xrt_system_devices *xsysd = &svrs->base;
+
+	u_system_devices_populate_function_pointers(xsysd, get_roles, destroy);
+	xsysd->create_hand_tracker = b_hand_tracker_create;
+	xsysd->add_device = add_device;
+
+	svrs->uso = uso;
+	svrs->prev_roles = XRT_SYSTEM_ROLES_INIT;
 	svrs->ctx = Context::create(STEAM_INSTALL_DIR, steamvr, std::move(drivers));
 	if (svrs->ctx == nullptr)
 		return xrt_result::XRT_ERROR_DEVICE_CREATION_FAILED;
@@ -992,28 +1049,12 @@ steamvr_lh_create_devices(struct xrt_prober *xp, struct xrt_system_devices **out
 		return xrt_result::XRT_ERROR_DEVICE_CREATION_FAILED;
 	}
 
-	struct xrt_system_devices *xsysd = &svrs->base;
-
-	u_system_devices_populate_function_pointers(xsysd, get_roles, destroy);
-	xsysd->create_hand_tracker = b_hand_tracker_create;
-	xsysd->add_device = add_device;
-
-	// Include the HMD
 	if (svrs->ctx->hmd) {
 		if (svrs->ctx->hmd->variant == VIVE_VARIANT_PRO2 && !svrs->ctx->hmd->init_vive_pro_2(xp)) {
 			U_LOG_IFL_W(level, "Found Vive Pro 2, but failed to initialize.");
 		}
 
-		// Always have a head at index 0 and iterate dev count.
-		xsysd->static_xdevs[xsysd->static_xdev_count] = svrs->ctx->hmd;
-		xsysd->static_roles.head = xsysd->static_xdevs[xsysd->static_xdev_count++];
-	}
-
-	// Include the controllers
-	for (size_t i = 0; i < MAX_CONTROLLERS; i++) {
-		if (svrs->ctx->controller[i]) {
-			xsysd->static_xdevs[xsysd->static_xdev_count++] = svrs->ctx->controller[i];
-		}
+		xsysd->static_roles.head = svrs->ctx->hmd;
 	}
 
 	*out_xsysd = xsysd;

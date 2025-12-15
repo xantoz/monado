@@ -9,6 +9,8 @@
 
 #include <xrt/xrt_results.h>
 
+#include "b_space_overseer.h"
+
 #pragma once
 
 #ifdef __cplusplus
@@ -34,7 +36,7 @@ extern "C" {
  * @ingroup drv_steamvr_lh
  */
 enum xrt_result
-steamvr_lh_create_devices(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd);
+steamvr_lh_create_devices(struct xrt_prober *xp, struct b_space_overseer *uso, struct xrt_system_devices **out_xsysd);
 
 
 #ifdef __cplusplus
