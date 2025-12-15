@@ -215,17 +215,24 @@ init_shm_and_instance_state(struct ipc_server *s, volatile struct ipc_client_sta
 	return XRT_SUCCESS;
 }
 
-static void
-init_system_shm_state(struct ipc_server *s, volatile struct ipc_client_state *ics)
+static xrt_result_t
+update_device_list(struct ipc_server *s, volatile struct ipc_client_state *ics)
 {
-	struct ipc_shared_memory *ism = get_ism(ics);
 	xrt_result_t xret = XRT_SUCCESS;
+
+	// Find the first new device.
+	uint32_t i = 0;
+	for (; i < XRT_SYSTEM_MAX_DEVICES; i++) {
+		if (ics->objects.xdevs[i] == NULL) {
+			break;
+		}
+	}
 
 	/*
 	 * Loop over all of the devices to pre-populate the device IDs,
 	 * this also populates the tracking origins.
 	 */
-	for (size_t i = 0; i < XRT_SYSTEM_MAX_DEVICES; i++) {
+	for (; i < XRT_SYSTEM_MAX_DEVICES; i++) {
 		struct xrt_device *xdev = s->xsysd->static_xdevs[i];
 		if (xdev == NULL) {
 			continue;
@@ -247,6 +254,17 @@ init_system_shm_state(struct ipc_server *s, volatile struct ipc_client_state *ic
 			continue;
 		}
 	}
+
+	return XRT_SUCCESS;
+}
+
+static void
+init_system_shm_state(struct ipc_server *s, volatile struct ipc_client_state *ics)
+{
+	struct ipc_shared_memory *ism = get_ism(ics);
+
+	// Initial device list update.
+	update_device_list(s, ics);
 
 	// Setup the HMD
 	// set view count
