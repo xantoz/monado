@@ -198,6 +198,30 @@ update_device_list(struct ipc_client_instance *ii)
 	return XRT_SUCCESS;
 }
 
+static void
+update_device_roles(struct ipc_client_instance *ii)
+{
+	struct ipc_client_system_devices *icsd = ii->icsd;
+	struct xrt_system_devices *xsysd = &icsd->base.base;
+
+#define SET_ROLE(ROLE)                                                                                                 \
+	do {                                                                                                           \
+		int32_t index = ii->ipc_c.ism->roles.ROLE;                                                             \
+		xsysd->static_roles.ROLE = index >= 0 ? xsysd->static_xdevs[index] : NULL;                                    \
+	} while (false)
+
+	SET_ROLE(head);
+	SET_ROLE(eyes);
+	SET_ROLE(face);
+	SET_ROLE(body);
+	SET_ROLE(hand_tracking.unobstructed.left);
+	SET_ROLE(hand_tracking.unobstructed.right);
+	SET_ROLE(hand_tracking.conforming.left);
+	SET_ROLE(hand_tracking.conforming.right);
+
+#undef SET_ROLE
+}
+
 static xrt_result_t
 ipc_client_instance_create_system(struct xrt_instance *xinst,
                                   struct xrt_system **out_xsys,
@@ -225,22 +249,8 @@ ipc_client_instance_create_system(struct xrt_instance *xinst,
 		goto err_destroy;
 	}
 
-#define SET_ROLE(ROLE)                                                                                                 \
-	do {                                                                                                           \
-		int32_t index = ii->ipc_c.ism->roles.ROLE;                                                             \
-		xsysd->static_roles.ROLE = index >= 0 ? xsysd->static_xdevs[index] : NULL;                             \
-	} while (false)
-
-	SET_ROLE(head);
-	SET_ROLE(eyes);
-	SET_ROLE(face);
-	SET_ROLE(body);
-	SET_ROLE(hand_tracking.unobstructed.left);
-	SET_ROLE(hand_tracking.unobstructed.right);
-	SET_ROLE(hand_tracking.conforming.left);
-	SET_ROLE(hand_tracking.conforming.right);
-
-#undef SET_ROLE
+	// Initial role update.
+	update_device_roles(ii);
 
 	// Done here now.
 	if (out_xsysc == NULL) {
