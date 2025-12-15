@@ -215,56 +215,10 @@ init_shm_and_instance_state(struct ipc_server *s, volatile struct ipc_client_sta
 	return XRT_SUCCESS;
 }
 
-static xrt_result_t
-update_device_list(struct ipc_server *s, volatile struct ipc_client_state *ics)
-{
-	xrt_result_t xret = XRT_SUCCESS;
-
-	// Find the first new device.
-	uint32_t i = 0;
-	for (; i < XRT_SYSTEM_MAX_DEVICES; i++) {
-		if (ics->objects.xdevs[i] == NULL) {
-			break;
-		}
-	}
-
-	/*
-	 * Loop over all of the devices to pre-populate the device IDs,
-	 * this also populates the tracking origins.
-	 */
-	for (; i < XRT_SYSTEM_MAX_DEVICES; i++) {
-		struct xrt_device *xdev = s->xsysd->static_xdevs[i];
-		if (xdev == NULL) {
-			continue;
-		}
-
-		// Populate the tracking origin.
-		uint32_t tracking_origin_id = 0;
-		xret = ipc_server_objects_get_xtrack_id_or_add(ics, xdev->tracking_origin, &tracking_origin_id);
-		if (xret != XRT_SUCCESS) {
-			IPC_ERROR(s, "Failed to get/add tracking origin ID for: '%s'", xdev->tracking_origin->name);
-			continue;
-		}
-
-		// Populate the device.
-		uint32_t device_id = 0;
-		xret = ipc_server_objects_get_xdev_id_or_add(ics, xdev, &device_id);
-		if (xret != XRT_SUCCESS) {
-			IPC_ERROR(s, "Failed to get/add device ID for: '%s'", xdev->str);
-			continue;
-		}
-	}
-
-	return XRT_SUCCESS;
-}
-
 static void
 init_system_shm_state(struct ipc_server *s, volatile struct ipc_client_state *ics)
 {
 	struct ipc_shared_memory *ism = get_ism(ics);
-
-	// Initial device list update.
-	update_device_list(s, ics);
 
 	// Setup the HMD
 	// set view count
@@ -690,6 +644,49 @@ allocate_id_locked(struct ipc_server *s)
 	return id;
 }
 
+static xrt_result_t
+update_device_list(struct ipc_server *s, volatile struct ipc_client_state *ics)
+{
+	xrt_result_t xret = XRT_SUCCESS;
+
+	// Find the first new device.
+	uint32_t i = 0;
+	for (; i < XRT_SYSTEM_MAX_DEVICES; i++) {
+		if (ics->objects.xdevs[i] == NULL) {
+			break;
+		}
+	}
+
+	/*
+	 * Loop over all of the devices to pre-populate the device IDs,
+	 * this also populates the tracking origins.
+	 */
+	for (; i < XRT_SYSTEM_MAX_DEVICES; i++) {
+		struct xrt_device *xdev = s->xsysd->static_xdevs[i];
+		if (xdev == NULL) {
+			continue;
+		}
+
+		// Populate the tracking origin.
+		uint32_t tracking_origin_id = 0;
+		xret = ipc_server_objects_get_xtrack_id_or_add(ics, xdev->tracking_origin, &tracking_origin_id);
+		if (xret != XRT_SUCCESS) {
+			IPC_ERROR(s, "Failed to get/add tracking origin ID for: '%s'", xdev->tracking_origin->name);
+			continue;
+		}
+
+		// Populate the device.
+		uint32_t device_id = 0;
+		xret = ipc_server_objects_get_xdev_id_or_add(ics, xdev, &device_id);
+		if (xret != XRT_SUCCESS) {
+			IPC_ERROR(s, "Failed to get/add device ID for: '%s'", xdev->str);
+			continue;
+		}
+	}
+
+	return XRT_SUCCESS;
+}
+
 
 /*
  *
@@ -716,6 +713,12 @@ ipc_server_init_system_if_available_locked(struct ipc_server *s,
 			xret = xrt_instance_create_system(s->xinst, &s->xsys, &s->xsysd, &s->xso, &s->xsysc);
 			IPC_CHK_WITH_GOTO(s, xret, "xrt_instance_create_system", error);
 		}
+	}
+
+	if (available && ics != NULL && !ics->has_init_device_list) {
+		xret = update_device_list(s, ics);
+		IPC_CHK_WITH_GOTO(s, xret, "update_device_list", error);
+		ics->has_init_device_list = true;
 	}
 
 	if (available && ics != NULL && !ics->has_init_shm_system) {

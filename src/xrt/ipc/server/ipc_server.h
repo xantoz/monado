@@ -97,6 +97,9 @@ struct ipc_client_state
 	//! Link back to the main server.
 	struct ipc_server *server;
 
+	//! Has the device list been initialized.
+	bool has_init_device_list;
+
 	//! Has the system part of the shm initialized.
 	bool has_init_shm_system;
 
