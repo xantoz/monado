@@ -10,6 +10,7 @@
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_session.h"
 
+#include "ipc_client_interface.h"
 #include "ipc_client_generated.h"
 
 
@@ -22,6 +23,8 @@
 struct ipc_client_session
 {
 	struct xrt_session base;
+
+	struct ipc_client_instance *ii;
 
 	struct ipc_connection *ipc_c;
 };
@@ -91,12 +94,13 @@ ipc_client_session_destroy(struct xrt_session *xs)
  */
 
 struct xrt_session *
-ipc_client_session_create(struct ipc_connection *ipc_c)
+ipc_client_session_create(struct ipc_client_instance *ii, struct ipc_connection *ipc_c)
 {
 	struct ipc_client_session *ics = U_TYPED_CALLOC(struct ipc_client_session);
 	ics->base.poll_events = ipc_client_session_poll_events;
 	ics->base.update_devices = ipc_client_session_update_devices;
 	ics->base.destroy = ipc_client_session_destroy;
+	ics->ii = ii;
 	ics->ipc_c = ipc_c;
 
 	return &ics->base;

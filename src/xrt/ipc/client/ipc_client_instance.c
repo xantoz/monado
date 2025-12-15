@@ -269,7 +269,7 @@ ipc_client_instance_create_system(struct xrt_instance *xinst,
 	}
 
 out:
-	*out_xsys = ipc_client_system_create(&ii->ipc_c, xsysc);
+	*out_xsys = ipc_client_system_create(ii, &ii->ipc_c, xsysc);
 	*out_xsysd = xsysd;
 	*out_xso = ipc_client_space_overseer_create(&ii->ipc_c);
 

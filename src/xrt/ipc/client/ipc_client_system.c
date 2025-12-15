@@ -26,6 +26,8 @@ struct ipc_client_system
 {
 	struct xrt_system base;
 
+	struct ipc_client_instance *ii;
+
 	struct ipc_connection *ipc_c;
 
 	struct xrt_system_compositor *xsysc;
@@ -56,7 +58,7 @@ create_headless(struct ipc_client_system *icsys, const struct xrt_session_info *
 	    false);                     // create_native_compositor
 	IPC_CHK_AND_RET(icsys->ipc_c, xret, "ipc_call_session_create");
 
-	struct xrt_session *xs = ipc_client_session_create(icsys->ipc_c);
+	struct xrt_session *xs = ipc_client_session_create(icsys->ii, icsys->ipc_c);
 	assert(xs != NULL);
 
 	*out_xs = xs;
@@ -81,7 +83,7 @@ create_with_comp(struct ipc_client_system *icsys,
 	    out_xcn);                               //
 	IPC_CHK_AND_RET(icsys->ipc_c, xret, "ipc_client_create_native_compositor");
 
-	struct xrt_session *xs = ipc_client_session_create(icsys->ipc_c);
+	struct xrt_session *xs = ipc_client_session_create(icsys->ii, icsys->ipc_c);
 	assert(xs != NULL);
 
 	*out_xs = xs;
@@ -133,7 +135,8 @@ ipc_client_system_destroy(struct xrt_system *xsys)
  */
 
 struct xrt_system *
-ipc_client_system_create(struct ipc_connection *ipc_c, struct xrt_system_compositor *xsysc)
+ipc_client_system_create(struct ipc_client_instance *ii, struct ipc_connection *ipc_c,
+                         struct xrt_system_compositor *xsysc)
 {
 	struct ipc_client_system *icsys = U_TYPED_CALLOC(struct ipc_client_system);
 
@@ -146,6 +149,7 @@ ipc_client_system_create(struct ipc_connection *ipc_c, struct xrt_system_composi
 
 	icsys->base.create_session = ipc_client_system_create_session;
 	icsys->base.destroy = ipc_client_system_destroy;
+	icsys->ii = ii;
 	icsys->ipc_c = ipc_c;
 	icsys->xsysc = xsysc;
 

@@ -53,6 +53,7 @@
 
 struct xrt_compositor_native;
 struct ipc_client_system_devices;
+struct ipc_client_instance;
 
 
 /*!
@@ -127,7 +128,8 @@ ipc_client_device_create(struct ipc_connection *ipc_c,
                          uint32_t device_id);
 
 struct xrt_system *
-ipc_client_system_create(struct ipc_connection *ipc_c, struct xrt_system_compositor *xsysc);
+ipc_client_system_create(struct ipc_client_instance *ii, struct ipc_connection *ipc_c,
+                         struct xrt_system_compositor *xsysc);
 
 struct xrt_space_overseer *
 ipc_client_space_overseer_create(struct ipc_connection *ipc_c);
@@ -139,7 +141,7 @@ xrt_result_t
 ipc_client_system_devices_create(struct ipc_connection *ipc_c, struct ipc_client_system_devices **out_icsd);
 
 struct xrt_session *
-ipc_client_session_create(struct ipc_connection *ipc_c);
+ipc_client_session_create(struct ipc_client_instance *ii, struct ipc_connection *ipc_c);
 
 struct xrt_future *
 ipc_client_future_create(struct ipc_connection *ipc_c, uint32_t future_id);
