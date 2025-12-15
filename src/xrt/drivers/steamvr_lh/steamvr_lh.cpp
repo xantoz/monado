@@ -857,6 +857,12 @@ Context::Log(const char *pchLogMessage)
 }
 // NOLINTEND(bugprone-easily-swappable-parameters)
 
+static xrt_result_t
+add_device(struct xrt_system_devices *xsysd, struct xrt_device *xdev)
+{
+	return XRT_ERROR_FEATURE_NOT_SUPPORTED;
+}
+
 xrt_result_t
 get_roles(struct xrt_system_devices *xsysd, struct xrt_system_roles *out_roles)
 {
@@ -990,6 +996,7 @@ steamvr_lh_create_devices(struct xrt_prober *xp, struct xrt_system_devices **out
 
 	u_system_devices_populate_function_pointers(xsysd, get_roles, destroy);
 	xsysd->create_hand_tracker = b_hand_tracker_create;
+	xsysd->add_device = add_device;
 
 	// Include the HMD
 	if (svrs->ctx->hmd) {

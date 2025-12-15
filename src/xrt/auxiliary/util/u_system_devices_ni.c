@@ -20,6 +20,13 @@
 #define E(FN) U_LOG_E("Function " #FN " is not implemented for this system devices implementation")
 
 xrt_result_t
+u_system_devices_ni_add_device(struct xrt_system_devices *xsysd, struct xrt_device *xdev)
+{
+	E(add_device);
+	return XRT_ERROR_FEATURE_NOT_SUPPORTED;
+}
+
+xrt_result_t
 u_system_devices_ni_create_hand_tracker(struct xrt_system_devices *xsysd,
                                         const struct xrt_hand_tracker_create_info *info,
                                         struct xrt_hand_tracker **out_xht)

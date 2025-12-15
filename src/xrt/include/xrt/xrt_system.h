@@ -314,6 +314,14 @@ struct xrt_system_devices
 
 
 	/*!
+	 * Add a device to the list of devices.
+	 *
+	 * @param xsysd Pointer to self
+	 * @param xdev  Device to add
+	 */
+	 xrt_result_t (*add_device)(struct xrt_system_devices *xsysd, struct xrt_device *xdev);
+
+	/*!
 	 * Function to get the dynamic input device roles from this system
 	 * devices, see @ref xrt_system_roles for more information.
 	 *
@@ -360,6 +368,19 @@ struct xrt_system_devices
 	 */
 	void (*destroy)(struct xrt_system_devices *xsysd);
 };
+
+/*!
+ * @copydoc xrt_system_devices::add_device
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_system_devices
+ */
+static inline xrt_result_t
+xrt_system_devices_add_device(struct xrt_system_devices *xsysd, struct xrt_device *xdev)
+{
+	return xsysd->add_device(xsysd, xdev);
+}
 
 /*!
  * @copydoc xrt_system_devices::get_roles

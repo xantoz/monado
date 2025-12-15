@@ -25,6 +25,14 @@ extern "C" {
  */
 
 /*!
+ * Not implemented function for @ref xrt_system_devices::add_device.
+ *
+ * @ingroup aux_util
+ */
+xrt_result_t
+u_system_devices_ni_add_device(struct xrt_system_devices *xsysd, struct xrt_device *xdev);
+
+/*!
  * Not implemented function for @ref xrt_system_devices::create_hand_tracker.
  *
  * @ingroup aux_util
