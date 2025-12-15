@@ -216,6 +216,23 @@ init_shm_and_instance_state(struct ipc_server *s, volatile struct ipc_client_sta
 }
 
 static void
+update_device_roles(struct ipc_server *s, struct ipc_shared_memory *ism)
+{
+	// Assign all of the roles.
+	ism->roles.head = find_xdev_index(s, s->xsysd->static_roles.head);
+	ism->roles.eyes = find_xdev_index(s, s->xsysd->static_roles.eyes);
+	ism->roles.face = find_xdev_index(s, s->xsysd->static_roles.face);
+	ism->roles.body = find_xdev_index(s, s->xsysd->static_roles.body);
+
+#define SET_HT_ROLE(SRC)                                                                                               \
+	ism->roles.hand_tracking.SRC.left = find_xdev_index(s, s->xsysd->static_roles.hand_tracking.SRC.left);         \
+	ism->roles.hand_tracking.SRC.right = find_xdev_index(s, s->xsysd->static_roles.hand_tracking.SRC.right);
+	SET_HT_ROLE(unobstructed)
+	SET_HT_ROLE(conforming)
+#undef SET_HT_ROLE
+}
+
+static void
 init_system_shm_state(struct ipc_server *s, volatile struct ipc_client_state *ics)
 {
 	struct ipc_shared_memory *ism = get_ism(ics);
@@ -240,18 +257,8 @@ init_system_shm_state(struct ipc_server *s, volatile struct ipc_client_state *ic
 		ism->hmd.blend_mode_count = xhmd->blend_mode_count;
 	}
 
-	// Assign all of the roles.
-	ism->roles.head = find_xdev_index(s, s->xsysd->static_roles.head);
-	ism->roles.eyes = find_xdev_index(s, s->xsysd->static_roles.eyes);
-	ism->roles.face = find_xdev_index(s, s->xsysd->static_roles.face);
-	ism->roles.body = find_xdev_index(s, s->xsysd->static_roles.body);
-
-#define SET_HT_ROLE(SRC)                                                                                               \
-	ism->roles.hand_tracking.SRC.left = find_xdev_index(s, s->xsysd->static_roles.hand_tracking.SRC.left);         \
-	ism->roles.hand_tracking.SRC.right = find_xdev_index(s, s->xsysd->static_roles.hand_tracking.SRC.right);
-	SET_HT_ROLE(unobstructed)
-	SET_HT_ROLE(conforming)
-#undef SET_HT_ROLE
+	// Initial role update.
+	update_device_roles(s, ism);
 }
 
 static void
