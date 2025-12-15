@@ -102,13 +102,19 @@ enum role_enum
 #define CHECK_ORIGIN_INDEX(INDEX)                                                                                      \
 	do {                                                                                                           \
 		if (INDEX >= root->tracking_origin_list.origin_count) {                                                \
-			PE("Invalid itrack index (%u)\n", INDEX);                                                      \
+			ipc_call_system_update_devices(&root->ipc_c);                                                  \
+		}                                                                                                      \
+		if (INDEX >= root->tracking_origin_list.origin_count) {                                                \
+			PE("Invalid device index (%u)", INDEX);                                                        \
 			return MND_ERROR_INVALID_VALUE;                                                                \
 		}                                                                                                      \
 	} while (false)
 
 #define CHECK_DEVICE_INDEX(INDEX)                                                                                      \
 	do {                                                                                                           \
+		if (INDEX >= root->device_list.device_count) {                                                         \
+			ipc_call_system_update_devices(&root->ipc_c);                                                  \
+		}                                                                                                      \
 		if (INDEX >= root->device_list.device_count) {                                                         \
 			PE("Invalid device index (%u)\n", INDEX);                                                      \
 			return MND_ERROR_INVALID_VALUE;                                                                \
